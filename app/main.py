@@ -173,7 +173,7 @@ def add_course():
 
     course = Course(title, cid)
     courses.append(course)
-    print("Added course:", course.title, course.id)
+    print("Added course:", course.title, "-", course.id)
 
     # ask once if they want to add sections now; only accept 'y' or 'n'
     while True:
@@ -233,7 +233,7 @@ def add_section(course_index: Optional[int] = None) -> None:
 
     while True:  # loop to allow multiple sections if user says 'y'
         print(f"\nAdding a section to: {course.title} ({course.id})")
-        print("Enter 'c' at any prompt to cancel this section (and return to the caller).")
+        print("Enter 'c' at any prompt to cancel")
 
         # Section/period id
         while True:
