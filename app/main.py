@@ -8,7 +8,6 @@ import re
 
 
 # Classes
-
 class Period:
     def __init__(self, course: str, days: Sequence[str], time_start: str, time_end: str, location: str = "", instructor: str = ""):
         self.course = course
@@ -22,7 +21,6 @@ class Period:
         days = ','.join(self.days)
         return f"Period(id={self.course!r}, days=[{days}], {self.timeStart}-{self.timeEnd})"
 
-
 class Course:
     def __init__(self, title: str, id: str):
         self.title = title
@@ -35,17 +33,38 @@ class Course:
     def __repr__(self):
         return f"Course(title={self.title!r}, id={self.id!r}, periods={len(self.periods)})"
 
-
 courses: List[Course] = []
 
 
-# Functions
+# Helper Functions
+def _parse_days(raw: str) -> list:
+    """
+    Turn user input like 'Mon,Wed' or 'Tue Thu' into ['Mon','Wed']
+    """
+    if not raw:
+        return []
+    parts = re.split(r"[,\s]+", raw.strip())
+    return [p.strip().capitalize() for p in parts if p.strip()]
 
+def _valid_time_format(t: str) -> bool:
+    """
+    Accept H:MM or HH:MM with 0<=H<=23 and 0<=MM<=59.
+    """
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", t.strip())
+    if not m:
+        return False
+    h, mm = int(m.group(1)), int(m.group(2))
+    return 0 <= h <= 23 and 0 <= mm <= 59
+
+
+# Functions
 def main_menu():
     """
     Main interactive menu.
+    Prints all menu options.
     Calls other functions based on user selection.
     """
+
     while True:
         print("\n\n===== Main Menu =====")
         print("What would you like to do?")
@@ -63,59 +82,58 @@ def main_menu():
             continue
 
         try:
-            sel = int(choice)
+            selection = int(choice)
         except ValueError:
             print("Invalid entry. Please enter a valid number.")
             continue
 
-        if sel < 0 or sel > 6:
+        if selection < 0 or selection > 6:
             print("Invalid entry. Please enter a valid number. ")
             continue
 
-        elif sel == 0:
+        elif selection == 0:
             print("Goodbye")
             return 0
 
-        elif sel == 1:
+        elif selection == 1:
             display_courses()
 
-        elif sel == 2:
+        elif selection == 2:
             add_course()
 
-        elif sel == 3:
+        elif selection == 3:
             # Edit Course
             edit_course()
 
-        elif sel == 4:
+        elif selection == 4:
             # Delete Course
             delete_course()
 
-        elif sel == 5:
+        elif selection == 5:
             # Edit Preferences
             print("Edit preferences: (not implemented yet)")
 
-        elif sel == 6:
+        elif selection == 6:
             # Create Schedules
             print("Create schedules: (not implemented yet)")
 
-
 def display_courses(show_periods: bool = True):
     """
-    Display all courses.
-    If show_periods is True, print each course's periods too.
+    Prints all courses and sections.
     """
+
     print("\n===== All Courses =====")
     if not courses:
         print("No courses have been added yet.")
         return
 
-    for idx, course in enumerate(courses, start=1):
-        print(f"{idx}. {course.title} ({course.id}) — {len(course.periods)} period(s)")
+    for index, course in enumerate(courses, start=1):
+        print(f"{index}. {course.title} ({course.id}) — {len(course.periods)} period(s)")
         if show_periods:
             if not course.periods:
                 print("    [no periods]")
             else:
-                for p_idx, period in enumerate(course.periods, start=1):
+                for index_period, period in enumerate(course.periods, start=1):
                     days = ", ".join(period.days)
                     # include location and instructor if available
                     extras = []
@@ -124,23 +142,23 @@ def display_courses(show_periods: bool = True):
                     if getattr(period, "instructor", ""):
                         extras.append(period.instructor)
                     extras_str = f" | {' - '.join(extras)}" if extras else ""
-                    print(f"    {p_idx}. {period.course}  |  {days}  |  {period.timeStart} - {period.timeEnd}{extras_str}")
-
+                    print(f"    {index_period}. {period.course}  |  {days}  |  {period.timeStart} - {period.timeEnd}{extras_str}")
 
 def choose_course() -> int:
     """
     Prompt the user to pick a course by number from the global course list.
     Returns the selected course index. Returns -1 if canceled.
     """
+
     if not courses:
         print("There are no courses to choose from.")
         return -1
 
     print("Select a course from the list ('c' to cancel):")
-    for idx, course in enumerate(courses, start=1):
+    for index, course in enumerate(courses, start=1):
         title = getattr(course, "title", repr(course))
-        cid = getattr(course, "id", "")
-        print(f"  {idx}. {title} ({cid}) - {len(course.periods)} period(s)")
+        id_course = getattr(course, "id", "")
+        print(f"  {index}. {title} ({id_course}) - {len(course.periods)} period(s)")
 
     while True:
         choice = input("Enter number of course (or 'c' to cancel): ").strip()
@@ -152,13 +170,16 @@ def choose_course() -> int:
         if not choice.isdigit():
             print("Invalid entry. Please enter the numeric index shown (e.g. 1) or 'c' to cancel. ")
             continue
-        sel = int(choice)
-        if 1 <= sel <= len(courses):
-            return sel - 1
+        selection = int(choice)
+        if 1 <= selection <= len(courses):
+            return selection - 1
         print(f"Out of range. Enter a number between 1 and {len(courses)}, or 'c' to cancel. ")
 
-
 def add_course():
+    """
+    Adds a course.
+    """
+    
     print("\n===== Add Course =====")
 
     title = input("Course Title: ").strip()
@@ -166,12 +187,12 @@ def add_course():
         print("Cancelled")
         return
 
-    cid = input("Course ID: ").strip()
-    if cid.lower() == "c":
+    id_course = input("Course ID: ").strip()
+    if id_course.lower() == "c":
         print("Cancelled")
         return
 
-    course = Course(title, cid)
+    course = Course(title, id_course)
     courses.append(course)
     print("Added course:", course.title, "-", course.id)
 
@@ -187,33 +208,12 @@ def add_course():
         else:
             print("Please enter 'y' or 'n'.")
 
-
-def _parse_days(raw: str) -> list:
-    """
-    Turn user input like 'Mon,Wed' or 'Tue Thu' into ['Mon','Wed']
-    """
-    if not raw:
-        return []
-    parts = re.split(r"[,\s]+", raw.strip())
-    return [p.strip().capitalize() for p in parts if p.strip()]
-
-
-def _valid_time_format(t: str) -> bool:
-    """
-    Accept H:MM or HH:MM with 0<=H<=23 and 0<=MM<=59.
-    """
-    m = re.fullmatch(r"(\d{1,2}):(\d{2})", t.strip())
-    if not m:
-        return False
-    h, mm = int(m.group(1)), int(m.group(2))
-    return 0 <= h <= 23 and 0 <= mm <= 59
-
-
 def add_section(course_index: Optional[int] = None) -> None:
     """
     Add one or more Periods to a course.
     If course_index is None, the user will be asked to choose a course.
     """
+    
     print("\n===== Add Section =====")
 
     # Determine which course to add to
@@ -222,18 +222,20 @@ def add_section(course_index: Optional[int] = None) -> None:
         if sel == -1:
             print("Add section cancelled.")
             return
-        course_index = sel
+        idx = sel
+    else:
+        idx = course_index
 
-    # Validate course_index bounds (defensive)
-    if course_index < 0 or course_index >= len(courses):
+    # Validate index bounds (defensive)
+    if idx < 0 or idx >= len(courses):
         print("Invalid course index.")
         return
 
-    course = courses[course_index]
+    course = courses[idx]
 
     while True:  # loop to allow multiple sections if user says 'y'
         print(f"\nAdding a section to: {course.title} ({course.id})")
-        print("Enter 'c' at any prompt to cancel")
+        print("Enter 'c' at any prompt to cancel this section (and return to the caller).")
 
         # Section/period id
         while True:
@@ -305,7 +307,7 @@ def add_section(course_index: Optional[int] = None) -> None:
         while True:
             again = input("Add another section to this course? (y/n): ").strip().lower()
             if again == "y":
-                break  # back to outer loop
+                break  # back to outer loop (add another)
             elif again == "n":
                 return
             elif again == "c":
@@ -313,7 +315,6 @@ def add_section(course_index: Optional[int] = None) -> None:
                 return
             else:
                 print("Please enter 'y' or 'n' (or 'c' to cancel).")
-
 
 def choose_section_index(course: Course) -> int:
     """
@@ -324,9 +325,9 @@ def choose_section_index(course: Course) -> int:
         print("This course has no sections.")
         return -1
     print(f"Select a section of {course.title} ({course.id}) ('c' to cancel):")
-    for idx, p in enumerate(course.periods, start=1):
+    for index, p in enumerate(course.periods, start=1):
         days = ", ".join(p.days) if getattr(p, "days", None) else "TBA"
-        print(f"  {idx}. {p.course} | {days} | {p.timeStart} - {p.timeEnd}")
+        print(f"  {index}. {p.course} | {days} | {p.timeStart} - {p.timeEnd}")
     while True:
         choice = input("Enter section number (or 'c' to cancel): ").strip()
         if not choice:
@@ -337,22 +338,21 @@ def choose_section_index(course: Course) -> int:
         if not choice.isdigit():
             print("Please enter a numeric index (e.g. 1).")
             continue
-        sel = int(choice)
-        if 1 <= sel <= len(course.periods):
-            return sel - 1
+        selection = int(choice)
+        if 1 <= selection <= len(course.periods):
+            return selection - 1
         print(f"Out of range. Enter 1..{len(course.periods)} or 'c' to cancel.")
-
 
 def edit_course() -> None:
     """
     Edit a selected course (title, id) and its sections (periods).
     """
-    ci = choose_course()
-    if ci == -1:
+    index_course = choose_course()
+    if index_course == -1:
         print("Edit cancelled or no courses.")
         return
 
-    course = courses[ci]
+    course = courses[index_course]
     while True:
         print(f"\n--- Editing Course: {course.title} ({course.id}) ---")
         print(" 1) Edit course title")
@@ -361,17 +361,17 @@ def edit_course() -> None:
         print(" 4) Add section")
         print(" 5) Delete course")
         print(" 0) Back")
-        opt = input("Selection: ").strip().lower()
+        selection1 = input("Selection: ").strip().lower()
 
-        if not opt:
+        if not selection1:
             print("Please choose an option.")
             continue
 
-        if opt == "0":
+        if selection1 == "0":
             print("Returning to main menu.")
             return
 
-        if opt == "1":
+        if selection1 == "1":
             new_title = input(f"New title (current: {course.title}) [enter to cancel]: ").strip()
             if not new_title:
                 print("Title edit cancelled.")
@@ -380,7 +380,7 @@ def edit_course() -> None:
                 print("Title updated.")
             continue
 
-        if opt == "2":
+        if selection1 == "2":
             new_id = input(f"New id (current: {course.id}) [enter to cancel]: ").strip()
             if not new_id:
                 print("ID edit cancelled.")
@@ -389,22 +389,22 @@ def edit_course() -> None:
                 print("ID updated.")
             continue
 
-        if opt == "3":
+        if selection1 == "3":
             # Edit existing sections
             if not course.periods:
                 print("Course has no sections. Use 'Add section' to create one.")
                 continue
 
-            sidx = choose_section_index(course)
-            if sidx == -1:
+            index_section = choose_section_index(course)
+            if index_section == -1:
                 print("Section selection cancelled.")
                 continue
 
-            period = course.periods[sidx]
+            period = course.periods[index_section]
             # section edit submenu
             while True:
                 days_str = ", ".join(period.days) if getattr(period, "days", None) else "TBA"
-                print(f"\n--- Editing Section {sidx+1}: {period.course} ---")
+                print(f"\n--- Editing Section {index_section+1}: {period.course} ---")
                 print(f"  Current: days={days_str}, start={period.timeStart}, end={period.timeEnd}, loc={period.location}, instr={period.instructor}")
                 print(" 1) Edit section id")
                 print(" 2) Edit days")
@@ -414,13 +414,13 @@ def edit_course() -> None:
                 print(" 6) Edit instructor")
                 print(" 7) Delete this section")
                 print(" 0) Back to course menu")
-                so = input("Selection: ").strip().lower()
-                if not so:
+                selection2 = input("Selection: ").strip().lower()
+                if not selection2:
                     print("Please choose an option.")
                     continue
-                if so == "0":
+                if selection2 == "0":
                     break
-                if so == "1":
+                if selection2 == "1":
                     new_pid = input(f"New section id (current: {period.course}) [enter to cancel]: ").strip()
                     if new_pid:
                         period.course = new_pid
@@ -428,7 +428,7 @@ def edit_course() -> None:
                     else:
                         print("Cancelled.")
                     continue
-                if so == "2":
+                if selection2 == "2":
                     raw = input(f"New days (current: {days_str}), e.g. Mon,Wed (enter to cancel): ").strip()
                     if not raw:
                         print("Cancelled.")
@@ -437,7 +437,7 @@ def edit_course() -> None:
                     period.days = days
                     print("Days updated.")
                     continue
-                if so == "3":
+                if selection2 == "3":
                     new_start = input(f"New start time (current: {period.timeStart}) [H:MM or empty to set TBA]: ").strip()
                     if new_start.lower() == "c" or new_start == "":
                         print("Start time edit cancelled or set to TBA.")
@@ -450,7 +450,7 @@ def edit_course() -> None:
                     period.timeStart = new_start
                     print("Start time updated.")
                     continue
-                if so == "4":
+                if selection2 == "4":
                     new_end = input(f"New end time (current: {period.timeEnd}) [H:MM or empty to set TBA]: ").strip()
                     if new_end.lower() == "c" or new_end == "":
                         print("End time edit cancelled or set to TBA.")
@@ -474,7 +474,7 @@ def edit_course() -> None:
                     period.timeEnd = new_end
                     print("End time updated.")
                     continue
-                if so == "5":
+                if selection2 == "5":
                     new_loc = input(f"New location (current: {period.location}) [enter to cancel]: ").strip()
                     if new_loc:
                         period.location = new_loc
@@ -482,7 +482,7 @@ def edit_course() -> None:
                     else:
                         print("Cancelled.")
                     continue
-                if so == "6":
+                if selection2 == "6":
                     new_instr = input(f"New instructor (current: {period.instructor}) [enter to cancel]: ").strip()
                     if new_instr:
                         period.instructor = new_instr
@@ -490,10 +490,10 @@ def edit_course() -> None:
                     else:
                         print("Cancelled.")
                     continue
-                if so == "7":
+                if selection2 == "7":
                     confirm = input("Delete this section? Type 'yes' to confirm: ").strip().lower()
                     if confirm == "yes":
-                        del course.periods[sidx]
+                        del course.periods[index_section]
                         print("Section deleted.")
                         break  # back to course menu
                     else:
@@ -503,15 +503,15 @@ def edit_course() -> None:
                 print("Unknown option; choose 0-7.")
             continue  # back to course menu
 
-        if opt == "4":
+        if selection1 == "4":
             # Add a section directly to this course
-            add_section(ci)
+            add_section(index_course)
             continue
 
-        if opt == "5":
+        if selection1 == "5":
             confirm = input(f"Delete entire course '{course.title}'? Type 'delete' to confirm: ").strip().lower()
             if confirm == "delete":
-                del courses[ci]
+                del courses[index_course]
                 print("Course deleted.")
                 return
             else:
@@ -520,54 +520,54 @@ def edit_course() -> None:
 
         print("Unknown option; choose 0-5.")
 
-
 def delete_course() -> None:
     """
     Allow the user to delete a whole course or a single section from a chosen course.
     """
-    ci = choose_course()
-    if ci == -1:
+
+    index_course = choose_course()
+    if index_course == -1:
         print("Delete cancelled or no courses.")
         return
 
-    course = courses[ci]
+    course = courses[index_course]
     while True:
         print(f"\n--- Delete: {course.title} ({course.id}) ---")
         print(" 1) Delete entire course")
         print(" 2) Delete a section from this course")
         print(" 0) Cancel / Back")
-        opt = input("Selection: ").strip().lower()
+        selection = input("Selection: ").strip().lower()
 
-        if not opt:
+        if not selection:
             print("Please choose an option.")
             continue
 
-        if opt == "0":
+        if selection == "0":
             print("Cancelled.")
             return
 
-        if opt == "1":
+        if selection == "1":
             confirm = input(f"Delete the entire course '{course.title}'? Type 'delete' to confirm: ").strip().lower()
             if confirm == "delete":
-                del courses[ci]
+                del courses[index_course]
                 print(f"Course '{course.title}' deleted.")
                 return
             else:
                 print("Deletion cancelled.")
             continue
 
-        if opt == "2":
+        if selection == "2":
             if not course.periods:
                 print("This course has no sections to delete.")
                 continue
-            sidx = choose_section_index(course)
-            if sidx == -1:
+            index_section = choose_section_index(course)
+            if index_section == -1:
                 print("Section deletion cancelled.")
                 continue
-            p = course.periods[sidx]
+            p = course.periods[index_section]
             confirm = input(f"Delete section '{p.course}'? Type 'yes' to confirm: ").strip().lower()
             if confirm == "yes":
-                del course.periods[sidx]
+                del course.periods[index_section]
                 print(f"Deleted section '{p.course}' from {course.title}.")
             else:
                 print("Deletion cancelled.")
