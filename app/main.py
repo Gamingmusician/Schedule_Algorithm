@@ -88,7 +88,7 @@ def main_menu():
 
         elif sel == 4:
             # Delete Course
-            print("Delete course: (not implemented yet)")
+            delete_course()
 
         elif sel == 5:
             # Edit Preferences
@@ -519,6 +519,62 @@ def edit_course() -> None:
             continue
 
         print("Unknown option; choose 0-5.")
+
+
+def delete_course() -> None:
+    """
+    Allow the user to delete a whole course or a single section from a chosen course.
+    """
+    ci = choose_course()
+    if ci == -1:
+        print("Delete cancelled or no courses.")
+        return
+
+    course = courses[ci]
+    while True:
+        print(f"\n--- Delete: {course.title} ({course.id}) ---")
+        print(" 1) Delete entire course")
+        print(" 2) Delete a section from this course")
+        print(" 0) Cancel / Back")
+        opt = input("Selection: ").strip().lower()
+
+        if not opt:
+            print("Please choose an option.")
+            continue
+
+        if opt == "0":
+            print("Cancelled.")
+            return
+
+        if opt == "1":
+            confirm = input(f"Delete the entire course '{course.title}'? Type 'delete' to confirm: ").strip().lower()
+            if confirm == "delete":
+                del courses[ci]
+                print(f"Course '{course.title}' deleted.")
+                return
+            else:
+                print("Deletion cancelled.")
+            continue
+
+        if opt == "2":
+            if not course.periods:
+                print("This course has no sections to delete.")
+                continue
+            sidx = choose_section_index(course)
+            if sidx == -1:
+                print("Section deletion cancelled.")
+                continue
+            p = course.periods[sidx]
+            confirm = input(f"Delete section '{p.course}'? Type 'yes' to confirm: ").strip().lower()
+            if confirm == "yes":
+                del course.periods[sidx]
+                print(f"Deleted section '{p.course}' from {course.title}.")
+            else:
+                print("Deletion cancelled.")
+            # after deleting a section, stay in the delete menu to allow more deletions or back out
+            continue
+
+        print("Unknown option; choose 0-2.")
 
 
 if __name__ == "__main__":
